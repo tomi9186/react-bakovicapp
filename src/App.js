@@ -17,7 +17,12 @@ function App() {
     <AuthProvider>
       <F7App {...f7params}>
         <AppLayout>
-          <View main url="/login/" browserHistory />
+          <View
+            main
+            url="/"
+            browserHistory
+            browserHistoryRoot="/react-bakovicapp/"
+          />
         </AppLayout>
       </F7App>
     </AuthProvider>
