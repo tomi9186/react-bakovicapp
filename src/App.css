@@ -1,0 +1,12 @@
+.app-title {
+  font-weight: 600;
+}
+
+.list .item-after {
+  font-weight: 500;
+}
+
+.empty-state {
+  opacity: 0.75;
+  text-align: center;
+}
