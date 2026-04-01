@@ -77,10 +77,7 @@ function GradilisteDetailPage({ f7route, f7router }) {
     <Page>
       <Navbar>
         <NavLeft>
-          <Link onClick={() => f7router.navigate('/gradilista/')}>
-            <i className="icon f7-icons">chevron_left</i>
-            Natrag
-          </Link>
+          <Link back iconF7="chevron_left" />
         </NavLeft>
         <NavTitle>{gradiliste?.naziv || 'Detalj gradilišta'}</NavTitle>
       </Navbar>

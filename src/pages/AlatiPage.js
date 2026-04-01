@@ -160,10 +160,7 @@ function AlatiPage({ f7router }) {
     <Page>
       <Navbar>
         <NavLeft>
-          <Link onClick={() => f7router.navigate('/home/')}>
-            <i className="icon f7-icons">chevron_left</i>
-            Natrag
-          </Link>
+          <Link back iconF7="chevron_left" />
         </NavLeft>
         <NavTitle>Alati</NavTitle>
         <NavRight>

@@ -68,7 +68,8 @@ function GradilistaPage({ f7router }) {
     }
   };
 
-  const onDelete = async (id) => {
+  const onDelete = async (event, id) => {
+    event.stopPropagation();
     if (!window.confirm('Želite li obrisati gradilište?')) return;
     try {
       await deleteGradiliste(id);
@@ -83,10 +84,7 @@ function GradilistaPage({ f7router }) {
     <Page>
       <Navbar>
         <NavLeft>
-          <Link onClick={() => f7router.navigate('/home/')}>
-            <i className="icon f7-icons">chevron_left</i>
-            Natrag
-          </Link>
+          <Link back iconF7="chevron_left" />
         </NavLeft>
         <NavTitle>Gradilišta</NavTitle>
         <NavRight>
@@ -118,16 +116,19 @@ function GradilistaPage({ f7router }) {
             <ListItem title="Nema gradilišta." />
           ) : (
             gradilista.map((item) => (
-              <ListItem key={item.id} title={item.naziv} subtitle={`${item.slug} | ID: ${item.id}`}>
-                <div slot="after" style={{ display: 'flex', gap: 8 }}>
+              <ListItem
+                key={item.id}
+                title={item.naziv}
+                subtitle={`${item.slug} | ID: ${item.id}`}
+                link
+                onClick={() => f7router.navigate(`/gradiliste/${item.id}/`)}
+              >
+                <div slot="after">
                   <Button
                     small
-                    tonal
-                    onClick={() => f7router.navigate(`/gradiliste/${item.id}/`)}
+                    color="red"
+                    onClick={(event) => onDelete(event, item.id)}
                   >
-                    Otvori
-                  </Button>
-                  <Button small color="red" onClick={() => onDelete(item.id)}>
                     Obriši
                   </Button>
                 </div>
