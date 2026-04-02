@@ -4,7 +4,6 @@ import {
   Button,
   Link,
   List,
-  ListButton,
   ListInput,
   ListItem,
   Sheet,
@@ -400,87 +399,98 @@ function AlatiPage({ f7router }) {
         <Sheet
           opened={!!selectedAlatKey}
           onSheetClosed={closeAlatDetails}
-          style={{ height: 'auto' }}
+          swipeToClose
+          style={{ 
+            height: '90vh',
+            display: 'flex',
+            flexDirection: 'column'
+          }}
         >
-          <Block style={{ paddingTop: 20 }}>
-            <Block strong style={{ marginBottom: 10 }}>
-              <h2>{getAlatDetails(selectedAlatKey).naziv}</h2>
-              <p style={{ fontSize: '12px', color: '#999' }}>
-                {getAlatDetails(selectedAlatKey).kategorija}
-              </p>
-            </Block>
+          <div style={{ 
+            flex: 1, 
+            overflowY: 'auto',
+            overflowX: 'hidden'
+          }}>
+            <Block style={{ paddingTop: 20 }}>
+              <Block strong style={{ marginBottom: 10 }}>
+                <h2>{getAlatDetails(selectedAlatKey).naziv}</h2>
+                <p style={{ fontSize: '12px', color: '#999' }}>
+                  {getAlatDetails(selectedAlatKey).kategorija}
+                </p>
+              </Block>
 
-            <Block strong style={{ marginBottom: 15 }}>
-              <h4>Lokacije alata</h4>
-              <List inset>
-                {Object.entries(getAlatDetails(selectedAlatKey).lokacije).map(([lokacija, instances]) => (
-                  <ListItem key={lokacija}>
-                    <div style={{ width: '100%' }}>
-                      <div style={{ fontWeight: 'bold', marginBottom: 8 }}>
-                        {lokacija}
-                      </div>
-                      {instances.map((instance, idx) => (
-                        <div key={idx} style={{ fontSize: '12px', marginBottom: 4 }}>
-                          {instance.brojKomada} kom.
+              <Block strong style={{ marginBottom: 15 }}>
+                <h4>Lokacije alata</h4>
+                <List inset>
+                  {Object.entries(getAlatDetails(selectedAlatKey).lokacije).map(([lokacija, instances]) => (
+                    <ListItem key={lokacija}>
+                      <div style={{ width: '100%' }}>
+                        <div style={{ fontWeight: 'bold', marginBottom: 8 }}>
+                          {lokacija}
                         </div>
-                      ))}
-                    </div>
-                  </ListItem>
-                ))}
-              </List>
-            </Block>
-
-            <Block strong style={{ marginBottom: 15 }}>
-              <h4>Premjesti alat</h4>
-              <List inset>
-                <ListInput
-                  type="select"
-                  label="Odakle prebacujem"
-                  value={transferSourceId || ''}
-                  onChange={(event) => {
-                    setTransferSourceId(event.target.value ? Number(event.target.value) : null);
-                    setTransferQuantity('1');
-                  }}
-                >
-                  <option value="">Odaberite lokaciju</option>
-                  {getAlatDetails(selectedAlatKey).instances.map((instance) => {
-                    const lokacija = instance.gradilisteId ? nazivGradilista(instance.gradilisteId) : 'Glavno skladište';
-                    return (
-                      <option key={instance.id} value={instance.id}>
-                        {lokacija} ({instance.brojKomada} kom.)
-                      </option>
-                    );
-                  })}
-                </ListInput>
-                <ListInput
-                  type="select"
-                  label="Gdje šaljem"
-                  value={transferDestinationId}
-                  onChange={(event) => setTransferDestinationId(event.target.value)}
-                  disabled={!transferSourceId}
-                >
-                  <option value="">Odaberite lokaciju</option>
-                  <option value="">Glavno skladište</option>
-                  {gradilista.map((gradiliste) => (
-                    <option key={gradiliste.id} value={String(gradiliste.id)}>
-                      {gradiliste.naziv}
-                    </option>
+                        {instances.map((instance, idx) => (
+                          <div key={idx} style={{ fontSize: '12px', marginBottom: 4 }}>
+                            {instance.brojKomada} kom.
+                          </div>
+                        ))}
+                      </div>
+                    </ListItem>
                   ))}
-                </ListInput>
-                <ListInput
-                  label="Količina"
-                  type="number"
-                  min="1"
-                  max={String(getMaxTransferQuantity())}
-                  value={transferQuantity}
-                  onInput={(event) => setTransferQuantity(event.target.value)}
-                  disabled={!transferSourceId}
-                />
-              </List>
-            </Block>
-          </Block>
+                </List>
+              </Block>
 
-          <Block>
+              <Block strong style={{ marginBottom: 15 }}>
+                <h4>Premjesti alat</h4>
+                <List inset>
+                  <ListInput
+                    type="select"
+                    label="Odakle prebacujem"
+                    value={transferSourceId || ''}
+                    onChange={(event) => {
+                      setTransferSourceId(event.target.value ? Number(event.target.value) : null);
+                      setTransferQuantity('1');
+                    }}
+                  >
+                    <option value="">Odaberite lokaciju</option>
+                    {getAlatDetails(selectedAlatKey).instances.map((instance) => {
+                      const lokacija = instance.gradilisteId ? nazivGradilista(instance.gradilisteId) : 'Glavno skladište';
+                      return (
+                        <option key={instance.id} value={instance.id}>
+                          {lokacija} ({instance.brojKomada} kom.)
+                        </option>
+                      );
+                    })}
+                  </ListInput>
+                  <ListInput
+                    type="select"
+                    label="Gdje šaljem"
+                    value={transferDestinationId}
+                    onChange={(event) => setTransferDestinationId(event.target.value)}
+                    disabled={!transferSourceId}
+                  >
+                    <option value="">Odaberite lokaciju</option>
+                    <option value="">Glavno skladište</option>
+                    {gradilista.map((gradiliste) => (
+                      <option key={gradiliste.id} value={String(gradiliste.id)}>
+                        {gradiliste.naziv}
+                      </option>
+                    ))}
+                  </ListInput>
+                  <ListInput
+                    label="Količina"
+                    type="number"
+                    min="1"
+                    max={String(getMaxTransferQuantity())}
+                    value={transferQuantity}
+                    onInput={(event) => setTransferQuantity(event.target.value)}
+                    disabled={!transferSourceId}
+                  />
+                </List>
+              </Block>
+            </Block>
+          </div>
+
+          <Block style={{ paddingBottom: 20 }}>
             <div style={{ display: 'flex', gap: 8 }}>
               <Button fill onClick={doTransfer} disabled={updatingId !== null}>
                 {updatingId ? 'Premještanje...' : 'Premjesti alat'}
