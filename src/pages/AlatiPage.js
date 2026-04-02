@@ -408,6 +408,7 @@ function AlatiPage({ f7router }) {
         >
           <div style={{ 
             flex: 1, 
+            minHeight: 0,
             overflowY: 'auto',
             overflowX: 'hidden'
           }}>
