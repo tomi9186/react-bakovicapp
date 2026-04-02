@@ -77,7 +77,11 @@ function GradilisteDetailPage({ f7route, f7router }) {
     <Page>
       <Navbar>
         <NavLeft>
-          <Link back iconF7="chevron_left" />
+          <Link back>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="15 18 9 12 15 6"></polyline>
+            </svg>
+          </Link>
         </NavLeft>
         <NavTitle>{gradiliste?.naziv || 'Detalj gradilišta'}</NavTitle>
       </Navbar>

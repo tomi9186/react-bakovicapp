@@ -4,9 +4,9 @@ import {
   Button,
   Link,
   List,
-  ListButton,
   ListInput,
   ListItem,
+  Sheet,
   Navbar,
   NavLeft,
   NavRight,
@@ -26,6 +26,7 @@ function GradilistaPage({ f7router }) {
   const [naziv, setNaziv] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [showAddSheet, setShowAddSheet] = useState(false);
 
   const loadData = async () => {
     setLoading(true);
@@ -60,12 +61,18 @@ function GradilistaPage({ f7router }) {
       const created = await createGradiliste(naziv.trim());
       setGradilista((previous) => [created, ...previous]);
       setNaziv('');
+      setShowAddSheet(false);
     } catch (error) {
       // eslint-disable-next-line no-alert
       alert('Greška pri dodavanju gradilišta.');
     } finally {
       setSaving(false);
     }
+  };
+
+  const closeAddSheet = () => {
+    setNaziv('');
+    setShowAddSheet(false);
   };
 
   const onDelete = async (event, id) => {
@@ -84,27 +91,22 @@ function GradilistaPage({ f7router }) {
     <Page>
       <Navbar>
         <NavLeft>
-          <Link back iconF7="chevron_left" />
+          <Link back>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="15 18 9 12 15 6"></polyline>
+            </svg>
+          </Link>
         </NavLeft>
         <NavTitle>Gradilišta</NavTitle>
         <NavRight>
+          <Button small onClick={() => setShowAddSheet(true)}>
+            Dodaj
+          </Button>
           <Button small onClick={loadData}>
             Osvježi
           </Button>
         </NavRight>
       </Navbar>
-
-      <List inset>
-        <ListInput
-          label="Novo gradilište"
-          placeholder="Unesite naziv"
-          value={naziv}
-          onInput={(event) => setNaziv(event.target.value)}
-        />
-        <ListButton onClick={onAdd} disabled={saving}>
-          {saving ? 'Spremanje...' : 'Dodaj gradilište'}
-        </ListButton>
-      </List>
 
       {loading ? (
         <Block strong className="empty-state">
@@ -120,14 +122,16 @@ function GradilistaPage({ f7router }) {
                 key={item.id}
                 title={item.naziv}
                 subtitle={`${item.slug} | ID: ${item.id}`}
-                link
                 onClick={() => f7router.navigate(`/gradiliste/${item.id}/`)}
               >
                 <div slot="after">
                   <Button
                     small
                     color="red"
-                    onClick={(event) => onDelete(event, item.id)}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onDelete(event, item.id);
+                    }}
                   >
                     Obriši
                   </Button>
@@ -137,7 +141,35 @@ function GradilistaPage({ f7router }) {
           )}
         </List>
       )}
-    </Page>
+      <Sheet
+        opened={showAddSheet}
+        onSheetClosed={closeAddSheet}
+        style={{ height: 'auto' }}
+      >
+        <Block style={{ paddingTop: 20 }}>
+          <Block strong style={{ marginBottom: 10 }}>
+            <h2>Dodaj novo gradilište</h2>
+          </Block>
+          <List inset>
+            <ListInput
+              label="Naziv gradilišta"
+              placeholder="Unesite naziv"
+              value={naziv}
+              onInput={(event) => setNaziv(event.target.value)}
+            />
+          </List>
+        </Block>
+        <Block>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <Button fill onClick={onAdd} disabled={saving}>
+              {saving ? 'Spremanje...' : 'Dodaj gradilište'}
+            </Button>
+            <Button onClick={closeAddSheet} disabled={saving}>
+              Odustani
+            </Button>
+          </div>
+        </Block>
+      </Sheet>    </Page>
   );
 }
 

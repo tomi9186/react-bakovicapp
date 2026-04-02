@@ -201,20 +201,24 @@ export async function transferAlatQuantity({ alat, targetGradilisteId, quantity,
   const sourceGradilisteId = String(alat.gradilisteId || '');
   const destinationGradilisteId = String(targetGradilisteId || '');
   if (sourceGradilisteId === destinationGradilisteId) {
-    return;
+    throw new Error('Izvor i teret su ista lokacija.');
   }
 
   const destination = (sviAlati || []).find(
     (item) =>
       item.id !== alat.id &&
-      normalizeToolKey(item.naziv, item.kategorija, item.gradilisteId) ===
-        normalizeToolKey(alat.naziv, alat.kategorija, destinationGradilisteId)
+      String(item.gradilisteId || '') === destinationGradilisteId &&
+      item.naziv === alat.naziv &&
+      item.kategorija === alat.kategorija
   );
 
   const sourceRemaining = Number(alat.brojKomada) - qty;
 
   if (destination) {
+    // Alat sa istim nazivom i kategorijom već postoji na ciljanoj lokaciji
     await updateAlat(destination.id, {
+      title: destination.naziv,
+      status: 'publish',
       meta: {
         kategorija: destination.kategorija,
         broj_komada: Number(destination.brojKomada) + qty,
@@ -222,6 +226,7 @@ export async function transferAlatQuantity({ alat, targetGradilisteId, quantity,
       },
     });
   } else {
+    // Kreiraj novi alat na ciljanoj lokaciji
     await createAlat({
       naziv: alat.naziv,
       kategorija: alat.kategorija,
@@ -230,10 +235,13 @@ export async function transferAlatQuantity({ alat, targetGradilisteId, quantity,
     });
   }
 
+  // Smanjti količinu na izvornoj lokaciji ili obriši alat
   if (sourceRemaining <= 0) {
     await deleteAlat(alat.id);
   } else {
     await updateAlat(alat.id, {
+      title: alat.naziv,
+      status: 'publish',
       meta: {
         kategorija: alat.kategorija,
         broj_komada: sourceRemaining,
