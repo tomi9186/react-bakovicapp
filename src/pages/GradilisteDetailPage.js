@@ -92,23 +92,28 @@ function GradilisteDetailPage({ f7route, f7router }) {
         </Block>
       ) : (
         <>
-          <Block strong>
-            <div>
-              <strong>Naziv:</strong> {gradiliste?.naziv || 'Nepoznato'}
-            </div>
-            <div>
-              <strong>ID:</strong> {gradiliste?.id || '-'}
-            </div>
-            <div>
-              <strong>Slug:</strong> {gradiliste?.slug || '-'}
-            </div>
-          </Block>
-          <List inset>
-            <ListInput
-              type="select"
-              label="Filter kategorije"
+          <Block
+            style={{
+              padding: '12px 16px',
+              marginBottom: 0,
+              marginTop: '20px',
+            }}
+          >
+            <label style={{ display: 'block', fontSize: '12px', color: '#999', marginBottom: 6 }}>
+              Filter po kategoriji
+            </label>
+            <select
               value={filterKategorija}
               onChange={(event) => setFilterKategorija(event.target.value)}
+              style={{
+                width: '100%',
+                padding: '8px 12px',
+                borderRadius: '6px',
+                border: '1px solid #ddd',
+                fontSize: '14px',
+                backgroundColor: 'white',
+                cursor: 'pointer',
+              }}
             >
               <option value="sve">Sve kategorije</option>
               {kategorije.map((kategorija) => (
@@ -116,8 +121,9 @@ function GradilisteDetailPage({ f7route, f7router }) {
                   {kategorija}
                 </option>
               ))}
-            </ListInput>
-          </List>
+            </select>
+          </Block>
+
           <List strong inset>
             {filtriraniAlati.length === 0 ? (
               <ListItem title="Nema alata na ovom gradilištu." />

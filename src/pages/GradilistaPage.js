@@ -18,6 +18,8 @@ import {
   createGradiliste,
   deleteGradiliste,
   fetchGradilista,
+  fetchAlati,
+  updateAlat,
 } from '../services/api';
 
 function GradilistaPage({ f7router }) {
@@ -79,6 +81,26 @@ function GradilistaPage({ f7router }) {
     event.stopPropagation();
     if (!window.confirm('Želite li obrisati gradilište?')) return;
     try {
+      // Prvo dohvati sve alate
+      const sviAlati = await fetchAlati();
+      
+      // Pronađi sve alate na ovom gradilištu
+      const alatiNaGradilistu = sviAlati.filter((alat) => String(alat.gradilisteId) === String(id));
+      
+      // Vrati sve alate u glavno skladište
+      for (const alat of alatiNaGradilistu) {
+        await updateAlat(alat.id, {
+          title: alat.naziv,
+          status: 'publish',
+          meta: {
+            kategorija: alat.kategorija,
+            broj_komada: alat.brojKomada,
+            gradiliste_id: '',
+          },
+        });
+      }
+      
+      // Tek nakon što su svi alati vraćeni, obriši gradilište
       await deleteGradiliste(id);
       setGradilista((previous) => previous.filter((item) => item.id !== id));
     } catch (error) {

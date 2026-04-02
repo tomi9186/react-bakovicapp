@@ -290,12 +290,27 @@ function AlatiPage({ f7router }) {
         </Block>
       ) : (
         <>
-          <List inset>
-            <ListInput
-              type="select"
-              label="Filter kategorije"
+          <Block
+            style={{
+              padding: '12px 16px',
+              marginBottom: 0,
+            }}
+          >
+            <label style={{ display: 'block', fontSize: '12px', color: '#999', marginBottom: 6 }}>
+              Filter po kategoriji
+            </label>
+            <select
               value={filterKategorija}
               onChange={(event) => setFilterKategorija(event.target.value)}
+              style={{
+                width: '100%',
+                padding: '8px 12px',
+                borderRadius: '6px',
+                border: '1px solid #ddd',
+                fontSize: '14px',
+                backgroundColor: 'white',
+                cursor: 'pointer',
+              }}
             >
               <option value="sve">Sve kategorije</option>
               {kategorije.map((kategorija) => (
@@ -303,11 +318,7 @@ function AlatiPage({ f7router }) {
                   {kategorija}
                 </option>
               ))}
-            </ListInput>
-          </List>
-
-          <Block strong className="text-align-center" style={{ paddingBottom: 0 }}>
-            <h4>Dostupni alati</h4>
+            </select>
           </Block>
 
           <List strong inset>
@@ -396,32 +407,75 @@ function AlatiPage({ f7router }) {
       </Sheet>
 
       {selectedAlatKey && (
-        <Sheet
-          opened={!!selectedAlatKey}
-          onSheetClosed={closeAlatDetails}
-          swipeToClose
-          style={{ 
-            height: '90vh',
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
             display: 'flex',
-            flexDirection: 'column'
+            alignItems: 'flex-end',
+            zIndex: 9999,
           }}
+          onClick={closeAlatDetails}
         >
-          <div style={{ 
-            flex: 1, 
-            minHeight: 0,
-            overflowY: 'auto',
-            overflowX: 'hidden'
-          }}>
-            <Block style={{ paddingTop: 20 }}>
-              <Block strong style={{ marginBottom: 10 }}>
-                <h2>{getAlatDetails(selectedAlatKey).naziv}</h2>
-                <p style={{ fontSize: '12px', color: '#999' }}>
-                  {getAlatDetails(selectedAlatKey).kategorija}
-                </p>
-              </Block>
+          <div
+            style={{
+              backgroundColor: 'white',
+              width: '100%',
+              maxHeight: '100vh',
+              display: 'flex',
+              flexDirection: 'column',
+              borderRadius: '12px 12px 0 0',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div
+              style={{
+                padding: '16px',
+                borderBottom: '1px solid #f0f0f0',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                flexShrink: 0,
+              }}
+            >
+              <h2 style={{ margin: 0, fontSize: '18px' }}>
+                {getAlatDetails(selectedAlatKey).naziv}
+              </h2>
+              <button
+                onClick={closeAlatDetails}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '24px',
+                  cursor: 'pointer',
+                  padding: 0,
+                  color: '#999',
+                }}
+              >
+                ✕
+              </button>
+            </div>
 
-              <Block strong style={{ marginBottom: 15 }}>
-                <h4>Lokacije alata</h4>
+            {/* Scrollable Content */}
+            <div
+              style={{
+                flex: 1,
+                overflowY: 'auto',
+                overflowX: 'hidden',
+                padding: '16px',
+              }}
+            >
+              <p style={{ fontSize: '12px', color: '#999', marginTop: 0 }}>
+                {getAlatDetails(selectedAlatKey).kategorija}
+              </p>
+
+              <div style={{ marginBottom: 20 }}>
+                <h4 style={{ marginTop: 0 }}>Lokacije alata</h4>
                 <List inset>
                   {Object.entries(getAlatDetails(selectedAlatKey).lokacije).map(([lokacija, instances]) => (
                     <ListItem key={lokacija}>
@@ -438,10 +492,10 @@ function AlatiPage({ f7router }) {
                     </ListItem>
                   ))}
                 </List>
-              </Block>
+              </div>
 
-              <Block strong style={{ marginBottom: 15 }}>
-                <h4>Premjesti alat</h4>
+              <div style={{ marginBottom: 20 }}>
+                <h4 style={{ marginTop: 0 }}>Premjesti alat</h4>
                 <List inset>
                   <ListInput
                     type="select"
@@ -487,19 +541,26 @@ function AlatiPage({ f7router }) {
                     disabled={!transferSourceId}
                   />
                 </List>
-              </Block>
-            </Block>
-          </div>
+              </div>
+            </div>
 
-          <Block style={{ paddingBottom: 20 }}>
-            <div style={{ display: 'flex', gap: 8 }}>
+            {/* Footer */}
+            <div
+              style={{
+                padding: '16px',
+                borderTop: '1px solid #f0f0f0',
+                display: 'flex',
+                gap: '8px',
+                flexShrink: 0,
+              }}
+            >
               <Button fill onClick={doTransfer} disabled={updatingId !== null}>
                 {updatingId ? 'Premještanje...' : 'Premjesti alat'}
               </Button>
               <Button onClick={closeAlatDetails}>Zatvori</Button>
             </div>
-          </Block>
-        </Sheet>
+          </div>
+        </div>
       )}
     </Page>
   );

@@ -41,7 +41,7 @@ function HomePage({ f7router }) {
         </NavRight>
       </Navbar>
 
-      <Block strong>
+      <Block strong style={{ marginTop: 0 }}>
         Dobrodošli, <strong>{user?.username || 'korisniče'}</strong>.
       </Block>
       <BlockTitle>Glavni meni</BlockTitle>
