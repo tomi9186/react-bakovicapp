@@ -4,7 +4,7 @@ const CACHE_NAME = 'bakovicapp-v1';
 const RUNTIME_CACHE = 'bakovicapp-runtime-v1';
 
 // Lista verzije aplikacije - trebam ažurirati ovo sa svakim deploymentom
-const APP_VERSION = '1.0.0';
+const APP_VERSION = '1.0.1';
 
 // Datoteke za cache pri instalaciji
 const STATIC_ASSETS = [
