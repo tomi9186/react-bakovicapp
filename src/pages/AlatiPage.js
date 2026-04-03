@@ -18,6 +18,7 @@ import {
   fetchAlati,
   fetchGradilista,
   transferAlatQuantity,
+  updateAlat,
 } from '../services/api';
 
 function AlatiPage({ f7router }) {
@@ -37,6 +38,9 @@ function AlatiPage({ f7router }) {
   const [transferSourceId, setTransferSourceId] = useState(null);
   const [transferDestinationId, setTransferDestinationId] = useState('');
   const [transferQuantity, setTransferQuantity] = useState('1');
+  const [editingInstanceId, setEditingInstanceId] = useState(null);
+  const [editQuantity, setEditQuantity] = useState('');
+  const [updatingEditId, setUpdatingEditId] = useState(null);
 
   const loadData = async () => {
     setLoading(true);
@@ -45,6 +49,7 @@ function AlatiPage({ f7router }) {
         fetchAlati(),
         fetchGradilista(),
       ]);
+      console.log('Fetched alati:', alatiData);
       setAlati(alatiData);
       setGradilista(gradilistaData);
     } catch (error) {
@@ -62,6 +67,16 @@ function AlatiPage({ f7router }) {
     }
     if (isCheckingAuth) return;
     loadData();
+
+    const handleAlatiUpdated = () => {
+      console.log('Alati updated event received, reloading...');
+      loadData();
+    };
+
+    window.addEventListener('bakovicapp:alati-updated', handleAlatiUpdated);
+    return () => {
+      window.removeEventListener('bakovicapp:alati-updated', handleAlatiUpdated);
+    };
   }, [isAuthenticated, isCheckingAuth, f7router]);
 
   if (isCheckingAuth || !isAuthenticated) {
@@ -164,7 +179,9 @@ function AlatiPage({ f7router }) {
     const details = {
       naziv,
       kategorija,
-      lokacije: {},
+      lokacije: {
+        'Glavno skladište': [],
+      },
       ukupno: 0,
       instances: instances,
     };
@@ -259,6 +276,52 @@ function AlatiPage({ f7router }) {
       alert(error.message || 'Premještanje alata nije uspjelo.');
     } finally {
       setUpdatingId(null);
+    }
+  };
+
+  const openEditQuantity = (instance) => {
+    setEditingInstanceId(instance.id);
+    setEditQuantity(String(instance.brojKomada));
+  };
+
+  const closeEditQuantity = () => {
+    setEditingInstanceId(null);
+    setEditQuantity('');
+  };
+
+  const doEditQuantity = async () => {
+    if (!editingInstanceId) return;
+
+    const qty = Number(editQuantity);
+    if (!qty || qty <= 0) {
+      // eslint-disable-next-line no-alert
+      alert('Količina mora biti veća od 0.');
+      return;
+    }
+
+    setUpdatingEditId(editingInstanceId);
+    try {
+      console.log('Updating alat ID:', editingInstanceId, 'to quantity:', qty);
+      const result = await updateAlat(editingInstanceId, {
+        meta: {
+          broj_komada: qty,
+        }
+      });
+      console.log('Update result:', result);
+      
+      // Osvježi podatke
+      await new Promise(resolve => setTimeout(resolve, 100)); // Mali delay för osiguranje
+      await loadData();
+      
+      // Čekaj malo da se komponenta re-renderira
+      await new Promise(resolve => setTimeout(resolve, 200));
+      closeEditQuantity();
+    } catch (error) {
+      console.error('Edit error:', error);
+      // eslint-disable-next-line no-alert
+      alert('Uređivanje količine nije uspjelo: ' + error.message);
+    } finally {
+      setUpdatingEditId(null);
     }
   };
 
@@ -529,11 +592,42 @@ function AlatiPage({ f7router }) {
                         <div style={{ fontWeight: 'bold', marginBottom: 8 }}>
                           {lokacija}
                         </div>
-                        {instances.map((instance, idx) => (
-                          <div key={idx} style={{ fontSize: '12px', marginBottom: 4 }}>
-                            {instance.brojKomada}
+                        {instances.length === 0 ? (
+                          <div style={{ fontSize: '12px', marginBottom: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#999' }}>
+                            <span>0</span>
                           </div>
-                        ))}
+                        ) : (
+                          instances.map((instance, idx) => (
+                            <div key={idx} style={{ fontSize: '12px', marginBottom: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <span>{instance.brojKomada}</span>
+                              {lokacija === 'Glavno skladište' && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    openEditQuantity(instance);
+                                  }}
+                                  style={{
+                                    background: 'none',
+                                    border: 'none',
+                                    padding: '4px 6px',
+                                    cursor: 'pointer',
+                                    fontSize: '14px',
+                                    color: '#666',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                  }}
+                                >
+                                  <svg width="16" height="16" viewBox="0 0 494.936 494.936" fill="currentColor">
+                                    <g>
+                                      <path d="M389.844,182.85c-6.743,0-12.21,5.467-12.21,12.21v222.968c0,23.562-19.174,42.735-42.736,42.735H67.157c-23.562,0-42.736-19.174-42.736-42.735V150.285c0-23.562,19.174-42.735,42.736-42.735h267.741c6.743,0,12.21-5.467,12.21-12.21s-5.467-12.21-12.21-12.21H67.157C30.126,83.13,0,113.255,0,150.285v267.743c0,37.029,30.126,67.155,67.157,67.155h267.741c37.03,0,67.156-30.126,67.156-67.155V195.061C402.054,188.318,396.587,182.85,389.844,182.85z"/>
+                                      <path d="M483.876,20.791c-14.72-14.72-38.669-14.714-53.377,0L221.352,229.944c-0.28,0.28-3.434,3.559-4.251,5.396l-28.963,65.069c-2.057,4.619-1.056,10.027,2.521,13.6c2.337,2.336,5.461,3.576,8.639,3.576c1.675,0,3.362-0.346,4.96-1.057l65.07-28.963c1.83-0.815,5.114-3.97,5.396-4.25L483.876,74.169c7.131-7.131,11.06-16.61,11.06-26.692C494.936,37.396,491.007,27.915,483.876,20.791z M466.61,56.897L257.457,266.05c-0.035,0.036-0.055,0.078-0.089,0.107l-33.989,15.131L238.51,247.3c0.03-0.036,0.071-0.055,0.107-0.09L447.765,38.058c5.038-5.039,13.819-5.033,18.846,0.005c2.518,2.51,3.905,5.855,3.905,9.414C470.516,51.036,469.127,54.38,466.61,56.897z"/>
+                                    </g>
+                                  </svg>
+                                </button>
+                              )}
+                            </div>
+                          ))
+                        )}
                       </div>
                     </ListItem>
                   ))}
@@ -612,6 +706,60 @@ function AlatiPage({ f7router }) {
               <Button onClick={closeAlatDetails}>Zatvori</Button>
               <Button fill onClick={doTransfer} disabled={updatingId !== null}>
                 {updatingId ? 'Premještanje...' : 'Premjesti alat'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {editingInstanceId && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 10000,
+          }}
+          onClick={closeEditQuantity}
+        >
+          <div
+            style={{
+              backgroundColor: 'white',
+              borderRadius: '12px',
+              padding: '24px',
+              maxWidth: '300px',
+              width: '90%',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 style={{ marginTop: 0, marginBottom: 16 }}>Uredi količinu</h3>
+            <input
+              type="number"
+              min="1"
+              value={editQuantity}
+              onChange={(e) => setEditQuantity(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '8px 12px',
+                borderRadius: '6px',
+                border: '1px solid #ddd',
+                fontSize: '14px',
+                marginBottom: 16,
+                boxSizing: 'border-box',
+              }}
+            />
+            <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+              <Button onClick={closeEditQuantity} disabled={updatingEditId !== null}>
+                Odustani
+              </Button>
+              <Button fill onClick={doEditQuantity} disabled={updatingEditId !== null}>
+                {updatingEditId ? 'Spremanje...' : 'Spremi'}
               </Button>
             </div>
           </div>
