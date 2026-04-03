@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import {
   Block,
   Button,
-  Link,
   List,
   ListInput,
   ListItem,
@@ -16,10 +15,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import {
   createGradiliste,
-  deleteGradiliste,
   fetchGradilista,
-  fetchAlati,
-  updateAlat,
 } from '../services/api';
 
 function GradilistaPage({ f7router }) {
@@ -29,6 +25,7 @@ function GradilistaPage({ f7router }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showAddSheet, setShowAddSheet] = useState(false);
+  const [searchText, setSearchText] = useState('');
 
   const loadData = async () => {
     setLoading(true);
@@ -77,56 +74,50 @@ function GradilistaPage({ f7router }) {
     setShowAddSheet(false);
   };
 
-  const onDelete = async (event, id) => {
-    event.stopPropagation();
-    if (!window.confirm('Želite li obrisati gradilište?')) return;
-    try {
-      // Prvo dohvati sve alate
-      const sviAlati = await fetchAlati();
-      
-      // Pronađi sve alate na ovom gradilištu
-      const alatiNaGradilistu = sviAlati.filter((alat) => String(alat.gradilisteId) === String(id));
-      
-      // Vrati sve alate u glavno skladište
-      for (const alat of alatiNaGradilistu) {
-        await updateAlat(alat.id, {
-          title: alat.naziv,
-          status: 'publish',
-          meta: {
-            kategorija: alat.kategorija,
-            broj_komada: alat.brojKomada,
-            gradiliste_id: '',
-          },
-        });
-      }
-      
-      // Tek nakon što su svi alati vraćeni, obriši gradilište
-      await deleteGradiliste(id);
-      setGradilista((previous) => previous.filter((item) => item.id !== id));
-    } catch (error) {
-      // eslint-disable-next-line no-alert
-      alert('Greška pri brisanju gradilišta.');
-    }
-  };
+  const filtriranaGradilista = gradilista.filter((item) =>
+    item.naziv.toLowerCase().includes(searchText.toLowerCase())
+  );
 
   return (
     <Page>
       <Navbar>
         <NavLeft>
-          <Link back>
+          <div
+            onClick={() => {
+              if (window.history.length > 1) {
+                f7router.back();
+              } else {
+                f7router.navigate('/');
+              }
+            }}
+            style={{ cursor: 'pointer', padding: '8px', display: 'flex', alignItems: 'center' }}
+          >
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="15 18 9 12 15 6"></polyline>
             </svg>
-          </Link>
+          </div>
         </NavLeft>
         <NavTitle>Gradilišta</NavTitle>
         <NavRight>
-          <Button small onClick={() => setShowAddSheet(true)}>
-            Dodaj
-          </Button>
-          <Button small onClick={loadData}>
-            Osvježi
-          </Button>
+          <div
+            onClick={() => setShowAddSheet(true)}
+            style={{ cursor: 'pointer', padding: '8px', display: 'flex', alignItems: 'center' }}
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+          </div>
+          <div
+            onClick={loadData}
+            style={{ cursor: 'pointer', padding: '8px', display: 'flex', alignItems: 'center' }}
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="23 4 23 10 17 10"></polyline>
+              <polyline points="1 20 1 14 7 14"></polyline>
+              <path d="M3.51 9a9 9 0 0 1 14.85-3.36M20.49 15a9 9 0 0 1-14.85 3.36"></path>
+            </svg>
+          </div>
         </NavRight>
       </Navbar>
 
@@ -135,33 +126,53 @@ function GradilistaPage({ f7router }) {
           Učitavanje gradilišta...
         </Block>
       ) : (
-        <List strong inset>
-          {gradilista.length === 0 ? (
-            <ListItem title="Nema gradilišta." />
-          ) : (
-            gradilista.map((item) => (
+        <>
+          <Block
+            style={{
+              padding: '12px 16px',
+              marginBottom: 0,
+            }}
+          >
+            <label style={{ display: 'block', fontSize: '12px', color: '#999', marginBottom: 6 }}>
+              Pretraži gradilišta
+            </label>
+            <input
+              type="text"
+              placeholder="Upišite naziv gradilišta"
+              value={searchText}
+              onChange={(event) => setSearchText(event.target.value)}
+              style={{
+                width: '100%',
+                padding: '8px 12px',
+                borderRadius: '6px',
+                border: '1px solid #ddd',
+                fontSize: '14px',
+                boxSizing: 'border-box',
+              }}
+            />
+          </Block>
+
+          <List strong inset>
+            {filtriranaGradilista.length === 0 ? (
+              <ListItem title={searchText ? 'Nema rezultata.' : 'Nema gradilišta.'} />
+            ) : (
+              filtriranaGradilista.map((item) => (
               <ListItem
                 key={item.id}
                 title={item.naziv}
                 subtitle={`${item.slug} | ID: ${item.id}`}
                 onClick={() => f7router.navigate(`/gradiliste/${item.id}/`)}
               >
-                <div slot="after">
-                  <Button
-                    small
-                    color="red"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      onDelete(event, item.id);
-                    }}
-                  >
-                    Obriši
-                  </Button>
+                <div slot="after" style={{ display: 'flex', alignItems: 'center' }}>
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="9 18 15 12 9 6"></polyline>
+                  </svg>
                 </div>
               </ListItem>
             ))
           )}
         </List>
+        </>
       )}
       <Sheet
         opened={showAddSheet}
@@ -182,12 +193,12 @@ function GradilistaPage({ f7router }) {
           </List>
         </Block>
         <Block>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <Button fill onClick={onAdd} disabled={saving}>
-              {saving ? 'Spremanje...' : 'Dodaj gradilište'}
-            </Button>
+          <div style={{ display: 'flex', gap: 8, justifyContent: 'space-between' }}>
             <Button onClick={closeAddSheet} disabled={saving}>
               Odustani
+            </Button>
+            <Button fill onClick={onAdd} disabled={saving}>
+              {saving ? 'Spremanje...' : 'Dodaj gradilište'}
             </Button>
           </div>
         </Block>

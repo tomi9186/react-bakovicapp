@@ -6,6 +6,10 @@
   font-weight: 500;
 }
 
+.item-content {
+  width: 100%;
+}
+
 .empty-state {
   opacity: 0.75;
   text-align: center;

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Block, Link, List, ListItem, Panel } from 'framework7-react';
+import { Block, List, ListItem, Panel } from 'framework7-react';
 import { useAuth } from '../context/AuthContext';
 import { fetchAlati } from '../services/api';
 
@@ -34,17 +34,15 @@ function AppLayout({ children }) {
           <Block style={{ margin: 0 }}>
             <List strong inset>
               <ListItem title="Glavni meni" />
-              <ListItem link="/home/" panelClose title="Početna" />
-              <ListItem link="/gradilista/" panelClose title="Gradilišta" />
+              <ListItem link="/home/" title="Početna" />
+              <ListItem link="/gradilista/" title="Gradilišta" />
               <ListItem
                 link="/alati/"
-                panelClose
                 title="Alati"
                 after={`${ukupnoKomada} kom`}
               />
               <ListItem
                 title="Odjava"
-                panelClose
                 onClick={() => {
                   logout();
                 }}
@@ -55,13 +53,19 @@ function AppLayout({ children }) {
       )}
       {children}
       {isAuthenticated && (
-        <Link
-          panelOpen="left"
+        <button
+          type="button"
+          onClick={() => {
+            const panel = document.querySelector('.panel-left');
+            if (panel) {
+              panel.classList.add('panel-in');
+            }
+          }}
           className="floating-action-button color-blue"
-          style={{ right: 16, bottom: 16, position: 'fixed', zIndex: 3000 }}
+          style={{ right: 16, bottom: 16, position: 'fixed', zIndex: 3000, cursor: 'pointer', padding: 0, border: 'none', background: 'none' }}
         >
           <i className="icon f7-icons">menu</i>
-        </Link>
+        </button>
       )}
     </>
   );

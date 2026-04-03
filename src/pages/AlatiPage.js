@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import {
   Block,
   Button,
-  Link,
   List,
   ListInput,
   ListItem,
@@ -102,7 +101,7 @@ function AlatiPage({ f7router }) {
         naziv: novoNaziv.trim(),
         kategorija: novoKategorija.trim(),
         brojKomada: qty,
-        gradilisteId: String(novoGradilisteId || ''),
+        gradilisteId: novoGradilisteId || 0,
       });
       setNovoNaziv('');
       setNovoKategorija('');
@@ -146,10 +145,10 @@ function AlatiPage({ f7router }) {
         });
       }
       const summary = summaryMap.get(key);
-      if (alat.gradilisteId) {
-        summary.naGradilištima += alat.brojKomada;
-      } else {
+      if (String(alat.gradilisteId) === "0" || !alat.gradilisteId) {
         summary.naSkladistu += alat.brojKomada;
+      } else {
+        summary.naGradilištima += alat.brojKomada;
       }
       summary.ukupno += alat.brojKomada;
     });
@@ -171,7 +170,7 @@ function AlatiPage({ f7router }) {
     };
 
     instances.forEach((alat) => {
-      const lokacija = alat.gradilisteId ? nazivGradilista(alat.gradilisteId) : 'Glavno skladište';
+      const lokacija = (alat.gradilisteId && String(alat.gradilisteId) !== "0") ? nazivGradilista(alat.gradilisteId) : 'Glavno skladište';
       if (!details.lokacije[lokacija]) {
         details.lokacije[lokacija] = [];
       }
@@ -223,7 +222,7 @@ function AlatiPage({ f7router }) {
       return;
     }
 
-    if (String(sourceAlat.gradilisteId || '') === destinationId) {
+    if (String(sourceAlat.gradilisteId) === destinationId) {
       // eslint-disable-next-line no-alert
       alert('Izvorišna i ciljna lokacija su iste.');
       return;
@@ -267,20 +266,42 @@ function AlatiPage({ f7router }) {
     <Page>
       <Navbar>
         <NavLeft>
-          <Link back>
+          <div
+            onClick={() => {
+              if (window.history.length > 1) {
+                f7router.back();
+              } else {
+                f7router.navigate('/');
+              }
+            }}
+            style={{ cursor: 'pointer', padding: '8px', display: 'flex', alignItems: 'center' }}
+          >
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="15 18 9 12 15 6"></polyline>
             </svg>
-          </Link>
+          </div>
         </NavLeft>
         <NavTitle>Alati</NavTitle>
         <NavRight>
-          <Button small onClick={() => setShowAddModal(true)}>
-            Dodaj
-          </Button>
-          <Button small onClick={loadData}>
-            Osvježi
-          </Button>
+          <div
+            onClick={() => setShowAddModal(true)}
+            style={{ cursor: 'pointer', padding: '8px', display: 'flex', alignItems: 'center' }}
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+          </div>
+          <div
+            onClick={loadData}
+            style={{ cursor: 'pointer', padding: '8px', display: 'flex', alignItems: 'center' }}
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="23 4 23 10 17 10"></polyline>
+              <polyline points="1 20 1 14 7 14"></polyline>
+              <path d="M3.51 9a9 9 0 0 1 14.85-3.36M20.49 15a9 9 0 0 1-14.85 3.36"></path>
+            </svg>
+          </div>
         </NavRight>
       </Navbar>
 
@@ -328,20 +349,36 @@ function AlatiPage({ f7router }) {
               generateAlatSummary().map((summary) => (
                 <ListItem
                   key={`${summary.naziv}|${summary.kategorija}`}
-                  link
                   onClick={() => openAlatDetails(`${summary.naziv}|${summary.kategorija}`)}
-                  title={summary.naziv}
+                  style={{ padding: '12px 16px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
                 >
-                  <div className="text-align-left" style={{ paddingTop: 8, paddingBottom: 8 }}>
-                    <div style={{ fontSize: '12px', color: '#999', marginBottom: 8 }}>
+                  <div style={{ width: '100%' }}>
+                    {/* Kategorija */}
+                    <div style={{ fontSize: '11px', color: '#999', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                       {summary.kategorija}
                     </div>
-                    <div style={{ fontSize: '13px', marginBottom: 4 }}>
-                      Na skladištu: <strong>{summary.naSkladistu} kom.</strong>
+                    
+                    {/* Naslov alata */}
+                    <div style={{ fontSize: '16px', fontWeight: '600', marginBottom: 8 }}>
+                      {summary.naziv}
                     </div>
-                    <div style={{ fontSize: '13px' }}>
-                      Na gradilištima: <strong>{summary.naGradilištima} kom.</strong>
+                    
+                    {/* Dva stupca sa detaljima */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: '16px' }}>
+                      <div style={{ fontSize: '13px', flex: 1 }}>
+                        Skladište: <strong>{summary.naSkladistu}</strong>
+                      </div>
+                      <div style={{ fontSize: '13px', flex: 1, textAlign: 'right' }}>
+                        Na gradilištu: <strong>{summary.naGradilištima}</strong>
+                      </div>
                     </div>
+                  </div>
+                  
+                  {/* Strelica na desnoj strani */}
+                  <div style={{ display: 'flex', alignItems: 'center', color: '#999', marginLeft: '16px', flexShrink: 0 }}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="9 18 15 12 9 6"></polyline>
+                    </svg>
                   </div>
                 </ListItem>
               ))
@@ -395,12 +432,12 @@ function AlatiPage({ f7router }) {
           </List>
         </Block>
         <Block>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <Button fill onClick={onAdd} disabled={saving}>
-              {saving ? 'Spremanje...' : 'Dodaj alat'}
-            </Button>
+          <div style={{ display: 'flex', gap: 8, justifyContent: 'space-between' }}>
             <Button onClick={closeAddModal} disabled={saving}>
               Odustani
+            </Button>
+            <Button fill onClick={onAdd} disabled={saving}>
+              {saving ? 'Spremanje...' : 'Dodaj alat'}
             </Button>
           </div>
         </Block>
@@ -435,25 +472,28 @@ function AlatiPage({ f7router }) {
             {/* Header */}
             <div
               style={{
+                position: 'relative',
                 padding: '16px',
+                paddingRight: '44px',
                 borderBottom: '1px solid #f0f0f0',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
                 flexShrink: 0,
               }}
             >
-              <h2 style={{ margin: 0, fontSize: '18px' }}>
+              <h2 style={{ margin: 0, fontSize: '18px', width: '100%' }}>
                 {getAlatDetails(selectedAlatKey).naziv}
               </h2>
               <button
                 onClick={closeAlatDetails}
                 style={{
+                  position: 'absolute',
+                  right: '16px',
+                  top: '16px',
                   background: 'none',
                   border: 'none',
                   fontSize: '24px',
                   cursor: 'pointer',
-                  padding: 0,
+                  padding: '3px 9.5px',
+                  width: 'auto',
                   color: '#999',
                 }}
               >
@@ -477,7 +517,13 @@ function AlatiPage({ f7router }) {
               <div style={{ marginBottom: 20 }}>
                 <h4 style={{ marginTop: 0 }}>Lokacije alata</h4>
                 <List inset>
-                  {Object.entries(getAlatDetails(selectedAlatKey).lokacije).map(([lokacija, instances]) => (
+                  {Object.entries(getAlatDetails(selectedAlatKey).lokacije)
+                    .sort(([lokacija1], [lokacija2]) => {
+                      if (lokacija1 === 'Glavno skladište') return -1;
+                      if (lokacija2 === 'Glavno skladište') return 1;
+                      return lokacija1.localeCompare(lokacija2);
+                    })
+                    .map(([lokacija, instances]) => (
                     <ListItem key={lokacija}>
                       <div style={{ width: '100%' }}>
                         <div style={{ fontWeight: 'bold', marginBottom: 8 }}>
@@ -485,7 +531,7 @@ function AlatiPage({ f7router }) {
                         </div>
                         {instances.map((instance, idx) => (
                           <div key={idx} style={{ fontSize: '12px', marginBottom: 4 }}>
-                            {instance.brojKomada} kom.
+                            {instance.brojKomada}
                           </div>
                         ))}
                       </div>
@@ -507,11 +553,19 @@ function AlatiPage({ f7router }) {
                     }}
                   >
                     <option value="">Odaberite lokaciju</option>
-                    {getAlatDetails(selectedAlatKey).instances.map((instance) => {
-                      const lokacija = instance.gradilisteId ? nazivGradilista(instance.gradilisteId) : 'Glavno skladište';
+                    {getAlatDetails(selectedAlatKey).instances
+                      .sort((a, b) => {
+                        const aIsMain = String(a.gradilisteId) === "0";
+                        const bIsMain = String(b.gradilisteId) === "0";
+                        if (aIsMain && !bIsMain) return -1;
+                        if (!aIsMain && bIsMain) return 1;
+                        return 0;
+                      })
+                      .map((instance) => {
+                      const lokacija = (instance.gradilisteId && String(instance.gradilisteId) !== "0") ? nazivGradilista(instance.gradilisteId) : 'Glavno skladište';
                       return (
                         <option key={instance.id} value={instance.id}>
-                          {lokacija} ({instance.brojKomada} kom.)
+                          {lokacija} ({instance.brojKomada})
                         </option>
                       );
                     })}
@@ -524,7 +578,7 @@ function AlatiPage({ f7router }) {
                     disabled={!transferSourceId}
                   >
                     <option value="">Odaberite lokaciju</option>
-                    <option value="">Glavno skladište</option>
+                    <option value="0">Glavno skladište</option>
                     {gradilista.map((gradiliste) => (
                       <option key={gradiliste.id} value={String(gradiliste.id)}>
                         {gradiliste.naziv}
@@ -552,12 +606,13 @@ function AlatiPage({ f7router }) {
                 display: 'flex',
                 gap: '8px',
                 flexShrink: 0,
+                justifyContent: 'space-between',
               }}
             >
+              <Button onClick={closeAlatDetails}>Zatvori</Button>
               <Button fill onClick={doTransfer} disabled={updatingId !== null}>
                 {updatingId ? 'Premještanje...' : 'Premjesti alat'}
               </Button>
-              <Button onClick={closeAlatDetails}>Zatvori</Button>
             </div>
           </div>
         </div>

@@ -145,7 +145,7 @@ export async function fetchAlati() {
     naziv: normalizeTitle(item),
     kategorija: item?.meta?.kategorija || item?.acf?.kategorija || '',
     brojKomada: Number(item?.meta?.broj_komada || item?.acf?.broj_komada || 0),
-    gradilisteId: String(item?.meta?.gradiliste_id || item?.acf?.gradiliste_id || ''),
+    gradilisteId: String(item?.meta?.gradiliste_id || item?.acf?.gradiliste_id || 0),
   }));
 }
 
@@ -158,7 +158,7 @@ export async function createAlat({ naziv, kategorija, brojKomada, gradilisteId =
       meta: {
         kategorija,
         broj_komada: Number(brojKomada),
-        gradiliste_id: String(gradilisteId || ''),
+        gradiliste_id: normalizeGradilisteId(gradilisteId),
       },
     }),
   });
@@ -183,10 +183,11 @@ export async function deleteAlat(alatId) {
   return payload;
 }
 
-function normalizeToolKey(naziv, kategorija, gradilisteId) {
-  return `${String(naziv || '').trim().toLowerCase()}|${String(kategorija || '')
-    .trim()
-    .toLowerCase()}|${String(gradilisteId || '')}`;
+function normalizeGradilisteId(gradilisteId) {
+  if (!gradilisteId || String(gradilisteId).trim() === '') {
+    return 0;
+  }
+  return Number(gradilisteId);
 }
 
 export async function transferAlatQuantity({ alat, targetGradilisteId, quantity, sviAlati }) {
@@ -207,7 +208,7 @@ export async function transferAlatQuantity({ alat, targetGradilisteId, quantity,
   const destination = (sviAlati || []).find(
     (item) =>
       item.id !== alat.id &&
-      String(item.gradilisteId || '') === destinationGradilisteId &&
+      String(item.gradilisteId) === destinationGradilisteId &&
       item.naziv === alat.naziv &&
       item.kategorija === alat.kategorija
   );
@@ -222,7 +223,7 @@ export async function transferAlatQuantity({ alat, targetGradilisteId, quantity,
       meta: {
         kategorija: destination.kategorija,
         broj_komada: Number(destination.brojKomada) + qty,
-        gradiliste_id: destinationGradilisteId,
+        gradiliste_id: normalizeGradilisteId(destinationGradilisteId),
       },
     });
   } else {
@@ -245,7 +246,7 @@ export async function transferAlatQuantity({ alat, targetGradilisteId, quantity,
       meta: {
         kategorija: alat.kategorija,
         broj_komada: sourceRemaining,
-        gradiliste_id: sourceGradilisteId,
+        gradiliste_id: normalizeGradilisteId(sourceGradilisteId),
       },
     });
   }
