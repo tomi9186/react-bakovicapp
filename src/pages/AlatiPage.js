@@ -13,6 +13,8 @@ import {
   Page,
 } from 'framework7-react';
 import { useAuth } from '../context/AuthContext';
+import { usePermission } from '../hooks/usePermission';
+import { PERMISSIONS } from '../utils/permissions';
 import {
   createAlat,
   fetchAlati,
@@ -23,6 +25,9 @@ import {
 
 function AlatiPage({ f7router }) {
   const { isAuthenticated, isCheckingAuth } = useAuth();
+  const canCreateAlat = usePermission(PERMISSIONS.CREATE_ALAT);
+  const canEditAlatQuantity = usePermission(PERMISSIONS.EDIT_ALAT_QUANTITY);
+  const canTransferAlat = usePermission(PERMISSIONS.TRANSFER_ALAT);
   const [alati, setAlati] = useState([]);
   const [gradilista, setGradilista] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -346,15 +351,17 @@ function AlatiPage({ f7router }) {
         </NavLeft>
         <NavTitle>Alati</NavTitle>
         <NavRight>
-          <div
-            onClick={() => setShowAddModal(true)}
-            style={{ cursor: 'pointer', padding: '8px', display: 'flex', alignItems: 'center' }}
-          >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="12" y1="5" x2="12" y2="19"></line>
-              <line x1="5" y1="12" x2="19" y2="12"></line>
-            </svg>
-          </div>
+          {canCreateAlat && (
+            <div
+              onClick={() => setShowAddModal(true)}
+              style={{ cursor: 'pointer', padding: '8px', display: 'flex', alignItems: 'center' }}
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+            </div>
+          )}
           <div
             onClick={loadData}
             style={{ cursor: 'pointer', padding: '8px', display: 'flex', alignItems: 'center' }}
@@ -600,7 +607,7 @@ function AlatiPage({ f7router }) {
                           instances.map((instance, idx) => (
                             <div key={idx} style={{ fontSize: '12px', marginBottom: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                               <span>{instance.brojKomada}</span>
-                              {lokacija === 'Glavno skladište' && (
+                              {lokacija === 'Glavno skladište' && canEditAlatQuantity && (
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation();
@@ -634,62 +641,64 @@ function AlatiPage({ f7router }) {
                 </List>
               </div>
 
-              <div style={{ marginBottom: 20 }}>
-                <h4 style={{ marginTop: 0 }}>Premjesti alat</h4>
-                <List inset>
-                  <ListInput
-                    type="select"
-                    label="Odakle prebacujem"
-                    value={transferSourceId || ''}
-                    onChange={(event) => {
-                      setTransferSourceId(event.target.value ? Number(event.target.value) : null);
-                      setTransferQuantity('1');
-                    }}
-                  >
-                    <option value="">Odaberite lokaciju</option>
-                    {getAlatDetails(selectedAlatKey).instances
-                      .sort((a, b) => {
-                        const aIsMain = String(a.gradilisteId) === "0";
-                        const bIsMain = String(b.gradilisteId) === "0";
-                        if (aIsMain && !bIsMain) return -1;
-                        if (!aIsMain && bIsMain) return 1;
-                        return 0;
-                      })
-                      .map((instance) => {
-                      const lokacija = (instance.gradilisteId && String(instance.gradilisteId) !== "0") ? nazivGradilista(instance.gradilisteId) : 'Glavno skladište';
-                      return (
-                        <option key={instance.id} value={instance.id}>
-                          {lokacija} ({instance.brojKomada})
+              {canTransferAlat && (
+                <div style={{ marginBottom: 20 }}>
+                  <h4 style={{ marginTop: 0 }}>Premjesti alat</h4>
+                  <List inset>
+                    <ListInput
+                      type="select"
+                      label="Odakle prebacujem"
+                      value={transferSourceId || ''}
+                      onChange={(event) => {
+                        setTransferSourceId(event.target.value ? Number(event.target.value) : null);
+                        setTransferQuantity('1');
+                      }}
+                    >
+                      <option value="">Odaberite lokaciju</option>
+                      {getAlatDetails(selectedAlatKey).instances
+                        .sort((a, b) => {
+                          const aIsMain = String(a.gradilisteId) === "0";
+                          const bIsMain = String(b.gradilisteId) === "0";
+                          if (aIsMain && !bIsMain) return -1;
+                          if (!aIsMain && bIsMain) return 1;
+                          return 0;
+                        })
+                        .map((instance) => {
+                        const lokacija = (instance.gradilisteId && String(instance.gradilisteId) !== "0") ? nazivGradilista(instance.gradilisteId) : 'Glavno skladište';
+                        return (
+                          <option key={instance.id} value={instance.id}>
+                            {lokacija} ({instance.brojKomada})
+                          </option>
+                        );
+                      })}
+                    </ListInput>
+                    <ListInput
+                      type="select"
+                      label="Gdje šaljem"
+                      value={transferDestinationId}
+                      onChange={(event) => setTransferDestinationId(event.target.value)}
+                      disabled={!transferSourceId}
+                    >
+                      <option value="">Odaberite lokaciju</option>
+                      <option value="0">Glavno skladište</option>
+                      {gradilista.map((gradiliste) => (
+                        <option key={gradiliste.id} value={String(gradiliste.id)}>
+                          {gradiliste.naziv}
                         </option>
-                      );
-                    })}
-                  </ListInput>
-                  <ListInput
-                    type="select"
-                    label="Gdje šaljem"
-                    value={transferDestinationId}
-                    onChange={(event) => setTransferDestinationId(event.target.value)}
-                    disabled={!transferSourceId}
-                  >
-                    <option value="">Odaberite lokaciju</option>
-                    <option value="0">Glavno skladište</option>
-                    {gradilista.map((gradiliste) => (
-                      <option key={gradiliste.id} value={String(gradiliste.id)}>
-                        {gradiliste.naziv}
-                      </option>
-                    ))}
-                  </ListInput>
-                  <ListInput
-                    label="Količina"
-                    type="number"
-                    min="1"
-                    max={String(getMaxTransferQuantity())}
-                    value={transferQuantity}
-                    onInput={(event) => setTransferQuantity(event.target.value)}
-                    disabled={!transferSourceId}
-                  />
-                </List>
-              </div>
+                      ))}
+                    </ListInput>
+                    <ListInput
+                      label="Količina"
+                      type="number"
+                      min="1"
+                      max={String(getMaxTransferQuantity())}
+                      value={transferQuantity}
+                      onInput={(event) => setTransferQuantity(event.target.value)}
+                      disabled={!transferSourceId}
+                    />
+                  </List>
+                </div>
+              )}
             </div>
 
             {/* Footer */}
@@ -704,9 +713,11 @@ function AlatiPage({ f7router }) {
               }}
             >
               <Button onClick={closeAlatDetails}>Zatvori</Button>
-              <Button fill onClick={doTransfer} disabled={updatingId !== null}>
-                {updatingId ? 'Premještanje...' : 'Premjesti alat'}
-              </Button>
+              {canTransferAlat && (
+                <Button fill onClick={doTransfer} disabled={updatingId !== null}>
+                  {updatingId ? 'Premještanje...' : 'Premjesti alat'}
+                </Button>
+              )}
             </div>
           </div>
         </div>

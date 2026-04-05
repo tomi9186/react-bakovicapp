@@ -13,6 +13,8 @@ import {
   Page,
 } from 'framework7-react';
 import { useAuth } from '../context/AuthContext';
+import { usePermission } from '../hooks/usePermission';
+import { PERMISSIONS } from '../utils/permissions';
 import {
   createGradiliste,
   fetchGradilista,
@@ -20,6 +22,7 @@ import {
 
 function GradilistaPage({ f7router }) {
   const { isAuthenticated, isCheckingAuth } = useAuth();
+  const canCreateGradiliste = usePermission(PERMISSIONS.CREATE_GRADILISTE);
   const [gradilista, setGradilista] = useState([]);
   const [naziv, setNaziv] = useState('');
   const [loading, setLoading] = useState(true);
@@ -99,15 +102,17 @@ function GradilistaPage({ f7router }) {
         </NavLeft>
         <NavTitle>Gradilišta</NavTitle>
         <NavRight>
-          <div
-            onClick={() => setShowAddSheet(true)}
-            style={{ cursor: 'pointer', padding: '8px', display: 'flex', alignItems: 'center' }}
-          >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="12" y1="5" x2="12" y2="19"></line>
-              <line x1="5" y1="12" x2="19" y2="12"></line>
-            </svg>
-          </div>
+          {canCreateGradiliste && (
+            <div
+              onClick={() => setShowAddSheet(true)}
+              style={{ cursor: 'pointer', padding: '8px', display: 'flex', alignItems: 'center' }}
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+            </div>
+          )}
           <div
             onClick={loadData}
             style={{ cursor: 'pointer', padding: '8px', display: 'flex', alignItems: 'center' }}

@@ -7,15 +7,37 @@ import {
   storeAuth,
   validateToken,
 } from '../services/api';
+import { getPermissionsForRole } from '../utils/permissions';
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [token, setToken] = useState(getStoredToken());
   const [user, setUser] = useState(getStoredUser());
+  const [permissions, setPermissions] = useState([]);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
   const isAuthenticated = Boolean(token);
+
+  // Dohvaća ulogu iz korisnikovih podataka
+  const getUserRole = (userData) => {
+    if (!userData) return null;
+    // Provjeravamo različite moguće lokacije uloge
+    return (
+      userData.role || 
+      (Array.isArray(userData.roles) && userData.roles[0]) ||
+      userData.user_role ||
+      null
+    );
+  };
+
+  // Ažurira dozvole bazene na ulozi
+  const updatePermissions = (userData) => {
+    const role = getUserRole(userData);
+    const userPermissions = getPermissionsForRole(role);
+    setPermissions(userPermissions);
+    console.log('User role:', role, 'Permissions:', userPermissions);
+  };
 
   const login = async (username, password) => {
     const response = await loginApi(username, password);
@@ -27,12 +49,14 @@ export function AuthProvider({ children }) {
     storeAuth(response.token, response.user);
     setToken(response.token);
     setUser(response.user);
+    updatePermissions(response.user);
   };
 
   const logout = () => {
     clearAuth();
     setToken(null);
     setUser(null);
+    setPermissions([]);
   };
 
   useEffect(() => {
@@ -41,6 +65,7 @@ export function AuthProvider({ children }) {
       if (!storedToken) {
         setToken(null);
         setUser(null);
+        setPermissions([]);
         setIsCheckingAuth(false);
         return;
       }
@@ -49,9 +74,12 @@ export function AuthProvider({ children }) {
       if (!isValid) {
         setToken(null);
         setUser(null);
+        setPermissions([]);
       } else {
+        const storedUser = getStoredUser();
         setToken(storedToken);
-        setUser(getStoredUser());
+        setUser(storedUser);
+        updatePermissions(storedUser);
       }
       setIsCheckingAuth(false);
     };
@@ -59,6 +87,7 @@ export function AuthProvider({ children }) {
     const handleAuthInvalid = () => {
       setToken(null);
       setUser(null);
+      setPermissions([]);
       setIsCheckingAuth(false);
     };
 
@@ -71,12 +100,13 @@ export function AuthProvider({ children }) {
     () => ({
       token,
       user,
+      permissions,
       isAuthenticated,
       isCheckingAuth,
       login,
       logout,
     }),
-    [token, user, isAuthenticated, isCheckingAuth]
+    [token, user, permissions, isAuthenticated, isCheckingAuth]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
