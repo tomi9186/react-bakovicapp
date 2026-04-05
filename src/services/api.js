@@ -70,11 +70,35 @@ export async function login(username, password) {
     headers: { 'Content-Type': 'application/json' },
   });
 
+  if (!payload?.token) {
+    throw new Error('Login nije uspio');
+  }
+
+  // Dohvati korisničke podatke uključujući ulogu
+  const userDataResponse = await fetch(`${config.baseUrl}/wp-json/wp/v2/users/me`, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${payload.token}`,
+      'Content-Type': 'application/json',
+    },
+  });
+
+  let role = 'worker'; // Default uloga
+  if (userDataResponse.ok) {
+    const userData = await userDataResponse.json();
+    // Dohvati prvu ulogu iz niza
+    if (Array.isArray(userData.roles) && userData.roles.length > 0) {
+      role = userData.roles[0];
+    }
+  }
+
   return {
     token: payload?.token,
     user: {
       username: payload?.user_display_name || username,
       email: payload?.user_email || '',
+      role: role, // ✅ Sada se vraća uloga!
+      roles: [role],
     },
   };
 }
