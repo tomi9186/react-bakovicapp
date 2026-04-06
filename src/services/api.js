@@ -74,30 +74,99 @@ export async function login(username, password) {
     throw new Error('Login nije uspio');
   }
 
-  // Dohvati korisničke podatke uključujući ulogu
-  const userDataResponse = await fetch(`${config.baseUrl}/wp-json/wp/v2/users/me`, {
-    method: 'GET',
-    headers: {
-      Authorization: `Bearer ${payload.token}`,
-      'Content-Type': 'application/json',
-    },
-  });
+  console.log('JWT Payload:', payload);
 
-  let role = 'worker'; // Default uloga
-  if (userDataResponse.ok) {
-    const userData = await userDataResponse.json();
-    // Dohvati prvu ulogu iz niza
-    if (Array.isArray(userData.roles) && userData.roles.length > 0) {
-      role = userData.roles[0];
+  // Pokušaj dohvatiti korisničke podatke sa custom endpointa PRVO
+  let role = 'worker'; // Default - najniža moguća ulog
+  console.log('🔍 POČETNI DEFAULT ROLE:', role);
+  
+  try {
+    // PRVO: Pokušaj sa custom endpointom /wp-json/bakovic/v1/user-info
+    const customUrl = `${config.baseUrl}/wp-json/bakovic/v1/user-info`;
+    console.log('📡 PRVO: Pozivam custom endpoint:', customUrl);
+    
+    const customResponse = await fetch(customUrl, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${payload.token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    
+    console.log('Custom endpoint response status:', customResponse.status);
+    console.log('Custom endpoint response ok:', customResponse.ok);
+
+    if (customResponse.ok) {
+      const customData = await customResponse.json();
+      console.log('✅ Custom user info:', customData);
+      console.log('   - Role:', customData.role);
+      console.log('   - Roles array:', customData.roles);
+      if (customData.role) {
+        role = customData.role;
+        console.log('✅ USPJEŠNO - Role from custom endpoint:', role);
+      } else {
+        console.log('⚠️ Custom data nema "role" polja, pokušavam /users/me...');
+        throw new Error('No role in custom response');
+      }
+    } else {
+      const customError = await customResponse.text();
+      console.log('❌ Custom endpoint failed (status ' + customResponse.status + ')');
+      console.log('   Response:', customError);
+      console.log('   Pokušavam fallback /users/me...');
+      throw new Error('Custom endpoint failed');
+    }
+  } catch (customError) {
+    console.log('⚠️ Custom endpoint nije dostupan, pokušavam /users/me...');
+    console.log('   Custom error:', customError.message);
+    
+    // FALLBACK: Pokušaj sa /wp-json/wp/v2/users/me
+    try {
+      const userMeUrl = `${config.baseUrl}/wp-json/wp/v2/users/me`;
+      console.log('📡 FALLBACK: Pozivam /users/me endpoint:', userMeUrl);
+      
+      const userDataResponse = await fetch(userMeUrl, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${payload.token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      console.log('User ME Response status:', userDataResponse.status);
+      console.log('User ME Response ok:', userDataResponse.ok);
+
+      if (userDataResponse.ok) {
+        const userData = await userDataResponse.json();
+        console.log('✅ User data from /users/me:', userData);
+        console.log('   - ID:', userData.id);
+        console.log('   - Username:', userData.username);
+        console.log('   - Roles array:', userData.roles);
+        
+        // Dohvati prvu ulogu iz niza
+        if (Array.isArray(userData.roles) && userData.roles.length > 0) {
+          role = userData.roles[0];
+          console.log('✅ Role from /users/me:', role);
+        } else {
+          console.log('⚠️ Roles array je prazan ili nije niz - ostaje default role');
+        }
+      } else {
+        const errorText = await userDataResponse.text();
+        console.log('❌ User ME endpoint failed (status ' + userDataResponse.status + ')');
+        console.log('   Response:', errorText);
+      }
+    } catch (fallbackError) {
+      console.error('❌ Fallback error:', fallbackError);
     }
   }
+
+  console.log('🎯 FINALNI ROLE:', role);
 
   return {
     token: payload?.token,
     user: {
       username: payload?.user_display_name || username,
       email: payload?.user_email || '',
-      role: role, // ✅ Sada se vraća uloga!
+      role: role,
       roles: [role],
     },
   };
