@@ -46,13 +46,48 @@ async function request(path, options = {}) {
     headers,
   });
 
-  if (response.status === 401 || response.status === 403) {
+  // ╔════════════════════════════════════════════════════════════════╗
+  // ║ DEBUG ISPIS - Zašto REST request failja?
+  // ╚════════════════════════════════════════════════════════════════╝
+  if (response.status === 403) {
+    console.error('❌ 403 FORBIDDEN on path:', path);
+    console.error('  Method:', options.method || 'GET');
+    console.error('  Response Status:', response.status);
+    
+    try {
+      const errorData = await response.json();
+      console.error('  Error Response:', errorData);
+      console.error('  Error Code:', errorData.code);
+      console.error('  Error Message:', errorData.message);
+      
+      // NE odjavljuj automatski ako je to samo edit/transfer problem
+      if (errorData.code === 'rest_cannot_edit') {
+        throw new Error(`Pristup odbijen: ${errorData.message}. Provjerite da imate dozvolu za ovu akciju.`);
+      }
+    } catch (e) {
+      if (e.message.includes('Pristup odbijen')) {
+        throw e;
+      }
+    }
+    
+    clearAuth();
+    notifyAuthInvalid();
+  }
+
+  if (response.status === 401) {
+    console.warn('⚠️  401 UNAUTHORIZED - auto logout');
     clearAuth();
     notifyAuthInvalid();
   }
 
   if (!response.ok) {
     const text = await response.text();
+    console.error('Request failed:', {
+      path,
+      method: options.method || 'GET',
+      status: response.status,
+      responseText: text,
+    });
     throw new Error(text || 'Greška pri komunikaciji sa serverom.');
   }
 
