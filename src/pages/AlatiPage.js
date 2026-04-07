@@ -95,7 +95,7 @@ function AlatiPage({ f7router }) {
 
   const kategorije = Array.from(
     new Set(alati.map((item) => (item.kategorija || '').trim()).filter(Boolean))
-  );
+  ).sort();
 
   const onAdd = async () => {
     const qty = Number(novoBrojKomada);

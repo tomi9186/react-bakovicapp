@@ -236,7 +236,7 @@ function normalizeTitle(item) {
 }
 
 export async function fetchGradilista() {
-  const data = await request(`${config.endpoints.gradilista}?per_page=100`);
+  const data = await request(`${config.endpoints.gradilista}?per_page=1000`);
   return data.map((item) => ({
     id: item.id,
     slug: item.slug,
@@ -267,7 +267,7 @@ export function deleteGradiliste(id) {
 }
 
 export async function fetchAlati() {
-  const data = await request(`${config.endpoints.alati}?per_page=100`);
+  const data = await request(`${config.endpoints.alati}?per_page=1000`);
   return data.map((item) => ({
     id: item.id,
     naziv: normalizeTitle(item),

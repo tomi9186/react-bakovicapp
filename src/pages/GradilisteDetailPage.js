@@ -71,7 +71,7 @@ function GradilisteDetailPage({ f7route, f7router }) {
     () =>
       Array.from(
         new Set(alatiNaGradilistu.map((item) => (item.kategorija || '').trim()).filter(Boolean))
-      ),
+      ).sort(),
     [alatiNaGradilistu]
   );
 
