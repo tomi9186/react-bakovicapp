@@ -53,7 +53,7 @@ function LoginPage({ f7router }) {
         <NavTitle className="app-title">BakovicApp - Prijava</NavTitle>
       </Navbar>
       <div className="login-container">
-        <img src="/logo-tg.png" alt="Termogradnja Baković" className="login-logo" />
+        <img src={`${process.env.PUBLIC_URL}/logo-tg.png`} alt="Termogradnja Baković" className="login-logo" />
         <form onSubmit={onSubmit}>
           <List inset>
             <ListInput

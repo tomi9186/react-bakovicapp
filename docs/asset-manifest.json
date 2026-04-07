@@ -1,15 +1,15 @@
 {
   "files": {
     "main.css": "/react-bakovicapp/static/css/main.eb799924.css",
-    "main.js": "/react-bakovicapp/static/js/main.dc608f17.js",
+    "main.js": "/react-bakovicapp/static/js/main.b7b52c05.js",
     "static/js/453.1e1985ef.chunk.js": "/react-bakovicapp/static/js/453.1e1985ef.chunk.js",
     "index.html": "/react-bakovicapp/index.html",
     "main.eb799924.css.map": "/react-bakovicapp/static/css/main.eb799924.css.map",
-    "main.dc608f17.js.map": "/react-bakovicapp/static/js/main.dc608f17.js.map",
+    "main.b7b52c05.js.map": "/react-bakovicapp/static/js/main.b7b52c05.js.map",
     "453.1e1985ef.chunk.js.map": "/react-bakovicapp/static/js/453.1e1985ef.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.eb799924.css",
-    "static/js/main.dc608f17.js"
+    "static/js/main.b7b52c05.js"
   ]
 }
