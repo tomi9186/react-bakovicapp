@@ -49,39 +49,42 @@ function LoginPage({ f7router }) {
 
   return (
     <Page loginScreen>
-      <Navbar>
+      <Navbar className="login-navbar">
         <NavTitle className="app-title">BakovicApp - Prijava</NavTitle>
       </Navbar>
-      <form onSubmit={onSubmit}>
-        <List inset>
-          <ListInput
-            name="username"
-            label="Korisničko ime"
-            type="text"
-            placeholder="Upišite korisničko ime"
-            autoComplete="username"
-            required
-            value={username}
-            onInput={(event) => setUsername(event.target.value)}
-          />
-          <ListInput
-            name="password"
-            label="Lozinka"
-            type="password"
-            placeholder="Upišite lozinku"
-            autoComplete="current-password"
-            required
-            value={password}
-            onInput={(event) => setPassword(event.target.value)}
-          />
-        </List>
-        <List inset>
-          <Button fill round type="submit" disabled={loading}>
-            {loading ? 'Prijava u tijeku...' : 'Prijavi se'}
-          </Button>
-        </List>
-      </form>
-      <BlockFooter>Aplikacija koristi WordPress JWT autentifikaciju.</BlockFooter>
+      <div className="login-container">
+        <img src="/logo-tg.png" alt="Termogradnja Baković" className="login-logo" />
+        <form onSubmit={onSubmit}>
+          <List inset>
+            <ListInput
+              name="username"
+              label="Korisničko ime"
+              type="text"
+              placeholder="Upišite korisničko ime"
+              autoComplete="username"
+              required
+              value={username}
+              onInput={(event) => setUsername(event.target.value)}
+            />
+            <ListInput
+              name="password"
+              label="Lozinka"
+              type="password"
+              placeholder="Upišite lozinku"
+              autoComplete="current-password"
+              required
+              value={password}
+              onInput={(event) => setPassword(event.target.value)}
+            />
+          </List>
+          <div className="login-button-wrapper">
+            <Button fill round type="submit" disabled={loading}>
+              {loading ? 'Prijava u tijeku...' : 'Prijavi se'}
+            </Button>
+          </div>
+        </form>
+      </div>
+      <BlockFooter>Prijaviti se mogu samo zaposlenici i suradnici tvrtke <strong>Termogradnja Baković</strong>.</BlockFooter>
     </Page>
   );
 }

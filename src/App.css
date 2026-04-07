@@ -21,3 +21,53 @@
   max-height: 100vh;
   overflow: auto !important;
 }
+
+/* ============================================================
+   LOGIN PAGE STYLES
+   ============================================================ */
+
+.login-container {
+  padding: 20px;
+  max-width: 500px;
+  margin: 40px auto;
+}
+
+.login-logo {
+  display: block;
+  max-width: 240px;
+  width: 100%;
+  margin: 0 auto 30px;
+  object-fit: contain;
+}
+
+.login-container form {
+  display: flex;
+  flex-direction: column;
+}
+
+.login-container .list.inset {
+  margin: 0 !important;
+}
+
+.login-button-wrapper {
+  padding: 0;
+  margin-top: 10px;
+  display: flex;
+  justify-content: center;
+}
+
+.login-button-wrapper button {
+  max-width: 100%;
+  min-width: 200px;
+  background: #e89024;
+  border-radius: 4px;
+  line-height: 56px;
+  height: 56px;
+  text-transform: uppercase;
+}
+
+/* Navbar se trebao skriviti na login stranici */
+.login-navbar {
+  display: none !important;
+}
+
