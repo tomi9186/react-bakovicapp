@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Block,
   Button,
@@ -32,6 +32,7 @@ function AlatiPage({ f7router }) {
   const [gradilista, setGradilista] = useState([]);
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState(null);
+  const [filterNaziv, setFilterNaziv] = useState('');
   const [filterKategorija, setFilterKategorija] = useState('sve');
   const [showAddModal, setShowAddModal] = useState(false);
   const [novoNaziv, setNovoNaziv] = useState('');
@@ -46,6 +47,8 @@ function AlatiPage({ f7router }) {
   const [editingInstanceId, setEditingInstanceId] = useState(null);
   const [editQuantity, setEditQuantity] = useState('');
   const [updatingEditId, setUpdatingEditId] = useState(null);
+  const [shouldReloadAfterAdd, setShouldReloadAfterAdd] = useState(false);
+  const skipEventReloadRef = useRef(false);
 
   const loadData = async () => {
     setLoading(true);
@@ -74,6 +77,10 @@ function AlatiPage({ f7router }) {
     loadData();
 
     const handleAlatiUpdated = () => {
+      if (skipEventReloadRef.current) {
+        console.log('Alati updated event skipped (manual reload pending)');
+        return;
+      }
       console.log('Alati updated event received, reloading...');
       loadData();
     };
@@ -83,6 +90,18 @@ function AlatiPage({ f7router }) {
       window.removeEventListener('bakovicapp:alati-updated', handleAlatiUpdated);
     };
   }, [isAuthenticated, isCheckingAuth, f7router]);
+
+  useEffect(() => {
+    if (!showAddModal && shouldReloadAfterAdd) {
+      setShouldReloadAfterAdd(false);
+      // Daj malo vremena Sheet komponenti da se zatvori prije nego sto se loadData pokrene
+      const timer = setTimeout(() => {
+        skipEventReloadRef.current = false;
+        loadData();
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [showAddModal, shouldReloadAfterAdd]);
 
   if (isCheckingAuth || !isAuthenticated) {
     return null;
@@ -117,6 +136,7 @@ function AlatiPage({ f7router }) {
 
     setSaving(true);
     try {
+      skipEventReloadRef.current = true;
       await createAlat({
         naziv: novoNaziv.trim(),
         kategorija: novoKategorija.trim(),
@@ -127,8 +147,8 @@ function AlatiPage({ f7router }) {
       setNovoKategorija('');
       setNovoBrojKomada('1');
       setNovoGradilisteId('');
+      setShouldReloadAfterAdd(true);
       setShowAddModal(false);
-      await loadData();
     } catch (error) {
       // eslint-disable-next-line no-alert
       alert('Dodavanje alata nije uspjelo.');
@@ -142,6 +162,9 @@ function AlatiPage({ f7router }) {
     setNovoKategorija('');
     setNovoBrojKomada('1');
     setNovoGradilisteId('');
+    if (!shouldReloadAfterAdd) {
+      skipEventReloadRef.current = false;
+    }
     setShowAddModal(false);
   };
 
@@ -149,6 +172,10 @@ function AlatiPage({ f7router }) {
     const summaryMap = new Map();
     
     alati.forEach((alat) => {
+      // Primeni filter naziva
+      if (filterNaziv && !alat.naziv.toLowerCase().includes(filterNaziv.toLowerCase())) {
+        return;
+      }
       // Primeni filter kategorije
       if (filterKategorija !== 'sve' && alat.kategorija !== filterKategorija) {
         return;
@@ -162,6 +189,7 @@ function AlatiPage({ f7router }) {
           naSkladistu: 0,
           naGradilištima: 0,
           ukupno: 0,
+          firstInstanceId: alat.id,
         });
       }
       const summary = summaryMap.get(key);
@@ -264,6 +292,7 @@ function AlatiPage({ f7router }) {
 
     setUpdatingId(sourceAlat.id);
     try {
+      skipEventReloadRef.current = true;
       await transferAlatQuantity({
         alat: sourceAlat,
         targetGradilisteId: destinationId,
@@ -271,16 +300,21 @@ function AlatiPage({ f7router }) {
         sviAlati: alati,
       });
 
+      // Zatvori detail sheet prije nego što učitaš podatke
+      closeAlatDetails();
+      // Mali delay da se animacija završi
+      await new Promise(resolve => setTimeout(resolve, 300));
+      skipEventReloadRef.current = false;
       await loadData();
       setTransferDestinationId('');
       setTransferQuantity('1');
       setTransferSourceId(null);
-      closeAlatDetails();
     } catch (error) {
       // eslint-disable-next-line no-alert
       alert(error.message || 'Premještanje alata nije uspjelo.');
     } finally {
       setUpdatingId(null);
+      skipEventReloadRef.current = false;
     }
   };
 
@@ -306,6 +340,7 @@ function AlatiPage({ f7router }) {
 
     setUpdatingEditId(editingInstanceId);
     try {
+      skipEventReloadRef.current = true;
       console.log('Updating alat ID:', editingInstanceId, 'to quantity:', qty);
       const result = await updateAlat(editingInstanceId, {
         meta: {
@@ -314,19 +349,20 @@ function AlatiPage({ f7router }) {
       });
       console.log('Update result:', result);
       
-      // Osvježi podatke
-      await new Promise(resolve => setTimeout(resolve, 100)); // Mali delay för osiguranje
-      await loadData();
-      
-      // Čekaj malo da se komponenta re-renderira
-      await new Promise(resolve => setTimeout(resolve, 200));
+      // Zatvori modal prije nego što učitaš podatke
       closeEditQuantity();
+      // Mali delay da se modal animacija završi
+      await new Promise(resolve => setTimeout(resolve, 300));
+      skipEventReloadRef.current = false;
+      // Osvježi podatke
+      await loadData();
     } catch (error) {
       console.error('Edit error:', error);
       // eslint-disable-next-line no-alert
       alert('Uređivanje količine nije uspjelo: ' + error.message);
     } finally {
       setUpdatingEditId(null);
+      skipEventReloadRef.current = false;
     }
   };
 
@@ -388,6 +424,25 @@ function AlatiPage({ f7router }) {
             }}
           >
             <label style={{ display: 'block', fontSize: '12px', color: '#999', marginBottom: 6 }}>
+              Pretraži po nazivu
+            </label>
+            <input
+              type="text"
+              placeholder="Upiši naziv alata..."
+              value={filterNaziv}
+              onChange={(event) => setFilterNaziv(event.target.value)}
+              style={{
+                width: '100%',
+                padding: '8px 12px',
+                borderRadius: '6px',
+                border: '1px solid #ddd',
+                fontSize: '14px',
+                backgroundColor: 'white',
+                boxSizing: 'border-box',
+                marginBottom: 12,
+              }}
+            />
+            <label style={{ display: 'block', fontSize: '12px', color: '#999', marginBottom: 6 }}>
               Filter po kategoriji
             </label>
             <select
@@ -418,7 +473,7 @@ function AlatiPage({ f7router }) {
             ) : (
               generateAlatSummary().map((summary) => (
                 <ListItem
-                  key={`${summary.naziv}|${summary.kategorija}`}
+                  key={summary.firstInstanceId}
                   onClick={() => openAlatDetails(`${summary.naziv}|${summary.kategorija}`)}
                   style={{ padding: '12px 16px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
                 >
@@ -513,73 +568,43 @@ function AlatiPage({ f7router }) {
         </Block>
       </Sheet>
 
-      {selectedAlatKey && (
-        <div
+      <Sheet
+        opened={!!selectedAlatKey}
+        onSheetClosed={closeAlatDetails}
+        style={{ height: 'auto' }}
+      >
+        <Block
           style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.5)',
-            display: 'flex',
-            alignItems: 'flex-end',
-            zIndex: 9999,
+            position: 'relative',
+            paddingRight: '44px',
+            borderBottom: '1px solid #f0f0f0',
           }}
-          onClick={closeAlatDetails}
         >
-          <div
+          <h2 style={{ margin: '0 0 4px 0', fontSize: '18px' }}>
+            {selectedAlatKey ? getAlatDetails(selectedAlatKey).naziv : ''}
+          </h2>
+          <button
+            onClick={closeAlatDetails}
             style={{
-              backgroundColor: 'white',
-              width: '100%',
-              maxHeight: '100vh',
-              display: 'flex',
-              flexDirection: 'column',
-              borderRadius: '12px 12px 0 0',
+              position: 'absolute',
+              right: '16px',
+              top: '16px',
+              background: 'none',
+              border: 'none',
+              fontSize: '24px',
+              cursor: 'pointer',
+              padding: '3px 9.5px',
+              width: 'auto',
+              color: '#999',
             }}
-            onClick={(e) => e.stopPropagation()}
           >
-            {/* Header */}
-            <div
-              style={{
-                position: 'relative',
-                padding: '16px',
-                paddingRight: '44px',
-                borderBottom: '1px solid #f0f0f0',
-                flexShrink: 0,
-              }}
-            >
-              <h2 style={{ margin: 0, fontSize: '18px', width: '100%' }}>
-                {getAlatDetails(selectedAlatKey).naziv}
-              </h2>
-              <button
-                onClick={closeAlatDetails}
-                style={{
-                  position: 'absolute',
-                  right: '16px',
-                  top: '16px',
-                  background: 'none',
-                  border: 'none',
-                  fontSize: '24px',
-                  cursor: 'pointer',
-                  padding: '3px 9.5px',
-                  width: 'auto',
-                  color: '#999',
-                }}
-              >
-                ✕
-              </button>
-            </div>
+            ✕
+          </button>
+        </Block>
 
-            {/* Scrollable Content */}
-            <div
-              style={{
-                flex: 1,
-                overflowY: 'auto',
-                overflowX: 'hidden',
-                padding: '16px',
-              }}
-            >
+        <Block>
+          {selectedAlatKey && (
+            <>
               <p style={{ fontSize: '12px', color: '#999', marginTop: 0 }}>
                 {getAlatDetails(selectedAlatKey).kategorija}
               </p>
@@ -604,8 +629,8 @@ function AlatiPage({ f7router }) {
                             <span>0</span>
                           </div>
                         ) : (
-                          instances.map((instance, idx) => (
-                            <div key={idx} style={{ fontSize: '12px', marginBottom: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          instances.map((instance) => (
+                            <div key={instance.id} style={{ fontSize: '12px', marginBottom: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                               <span>{instance.brojKomada}</span>
                               {lokacija === 'Glavno skladište' && canEditAlatQuantity && (
                                 <button
@@ -699,83 +724,48 @@ function AlatiPage({ f7router }) {
                   </List>
                 </div>
               )}
-            </div>
+            </>
+          )}
+        </Block>
 
-            {/* Footer */}
-            <div
-              style={{
-                padding: '16px',
-                borderTop: '1px solid #f0f0f0',
-                display: 'flex',
-                gap: '8px',
-                flexShrink: 0,
-                justifyContent: 'space-between',
-              }}
-            >
-              <Button onClick={closeAlatDetails}>Zatvori</Button>
-              {canTransferAlat && (
-                <Button fill onClick={doTransfer} disabled={updatingId !== null}>
-                  {updatingId ? 'Premještanje...' : 'Premjesti alat'}
-                </Button>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+        <Block style={{ borderTop: '1px solid #f0f0f0', display: 'flex', gap: '8px', justifyContent: 'space-between' }}>
+          <Button onClick={closeAlatDetails}>Zatvori</Button>
+          {canTransferAlat && (
+            <Button fill onClick={doTransfer} disabled={updatingId !== null}>
+              {updatingId ? 'Premještanje...' : 'Premjesti alat'}
+            </Button>
+          )}
+        </Block>
+      </Sheet>
 
-      {editingInstanceId && (
-        <div
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.5)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 10000,
-          }}
-          onClick={closeEditQuantity}
-        >
-          <div
-            style={{
-              backgroundColor: 'white',
-              borderRadius: '12px',
-              padding: '24px',
-              maxWidth: '300px',
-              width: '90%',
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3 style={{ marginTop: 0, marginBottom: 16 }}>Uredi količinu</h3>
-            <input
+      <Sheet
+        opened={!!editingInstanceId}
+        onSheetClosed={closeEditQuantity}
+        style={{ height: 'auto' }}
+      >
+        <Block style={{ paddingTop: 20 }}>
+          <Block strong style={{ marginBottom: 10 }}>
+            <h3 style={{ marginTop: 0 }}>Uredi količinu</h3>
+          </Block>
+          <List inset>
+            <ListInput
+              label="Količina"
               type="number"
               min="1"
               value={editQuantity}
-              onChange={(e) => setEditQuantity(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '8px 12px',
-                borderRadius: '6px',
-                border: '1px solid #ddd',
-                fontSize: '14px',
-                marginBottom: 16,
-                boxSizing: 'border-box',
-              }}
+              onInput={(e) => setEditQuantity(e.target.value)}
             />
-            <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-              <Button onClick={closeEditQuantity} disabled={updatingEditId !== null}>
-                Odustani
-              </Button>
-              <Button fill onClick={doEditQuantity} disabled={updatingEditId !== null}>
-                {updatingEditId ? 'Spremanje...' : 'Spremi'}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+          </List>
+        </Block>
+        <Block style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+          <Button onClick={closeEditQuantity} disabled={updatingEditId !== null}>
+            Odustani
+          </Button>
+          <Button fill onClick={doEditQuantity} disabled={updatingEditId !== null}>
+            {updatingEditId ? 'Spremanje...' : 'Spremi'}
+          </Button>
+        </Block>
+      </Sheet>
     </Page>
   );
 }
